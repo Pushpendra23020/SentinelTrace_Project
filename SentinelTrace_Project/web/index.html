@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SentinelTrace | Local Log Threat Triage</title>
+  <style>
+    :root { --bg:#071218; --panel:#0d202a; --line:#254452; --ink:#e9f3f4; --muted:#9db4bb; --cyan:#43d8c8; --blue:#62b2ff; --critical:#ff7780; --high:#ffb96b; --medium:#f3d562; --low:#61d2da; }
+    * { box-sizing:border-box; }
+    body { margin:0; min-height:100vh; color:var(--ink); background:radial-gradient(circle at 85% -10%,#1d4755 0,transparent 32%),var(--bg); font:15px/1.45 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+    main { max-width:1260px; margin:0 auto; padding:34px 20px 54px; }
+    header { display:flex; justify-content:space-between; gap:20px; align-items:flex-start; border-bottom:1px solid var(--line); padding-bottom:22px; }
+    h1,h2,h3,p { margin-top:0; } h1 { margin-bottom:4px; font-size:clamp(28px,4vw,38px); letter-spacing:-1.5px; } h1 span,.accent { color:var(--cyan); } h2 { font-size:18px; margin-bottom:4px; } h3 { margin-bottom:5px; font-size:15px; }
+    .tag,.muted { color:var(--muted); } .tag { margin-bottom:0; }
+    .service { white-space:nowrap; border:1px solid #2b746f; color:var(--cyan); border-radius:999px; padding:7px 10px; font-size:12px; font-weight:700; } .service.offline { border-color:#7b4a4e; color:#ffadb2; }
+    .layout { display:grid; grid-template-columns:minmax(360px,.92fr) minmax(430px,1.08fr); gap:20px; margin-top:24px; }
+    .panel { background:rgba(13,32,42,.94); border:1px solid var(--line); border-radius:16px; padding:20px; }
+    .eyebrow { color:var(--muted); font-size:11px; letter-spacing:.09em; font-weight:800; text-transform:uppercase; }
+    textarea { width:100%; min-height:420px; resize:vertical; margin-top:10px; padding:13px; border:1px solid var(--line); border-radius:10px; background:#061015; color:#cce5e8; font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
+    textarea:focus { outline:2px solid #2a7673; border-color:transparent; }
+    .buttons { display:flex; flex-wrap:wrap; gap:9px; margin-top:13px; }
+    button { appearance:none; border:0; border-radius:9px; padding:10px 14px; cursor:pointer; color:#062023; background:var(--cyan); font:inherit; font-weight:800; }
+    button.secondary { color:var(--ink); background:transparent; border:1px solid var(--line); } button:disabled { cursor:not-allowed; opacity:.5; }
+    .boundary { margin:16px 0 0; padding:12px; border-radius:9px; border-left:3px solid var(--cyan); color:var(--muted); background:#091a21; font-size:13px; }
+    .empty { display:grid; min-height:450px; place-items:center; text-align:center; color:var(--muted); } .empty > div { max-width:330px; }
+    .summary { display:grid; grid-template-columns:repeat(4,1fr); gap:9px; margin:14px 0 18px; }
+    .stat { min-width:0; padding:11px; border-radius:10px; background:#091920; } .stat b { display:block; font-size:22px; line-height:1.1; } .stat small { color:var(--muted); font-size:11px; }
+    .section { margin-top:21px; } .entity,.finding { border-top:1px solid var(--line); padding:13px 0; }
+    .entity-head { display:flex; align-items:center; justify-content:space-between; gap:12px; } .entity-rules,.meta { color:var(--muted); font-size:12px; }
+    .meter { height:6px; overflow:hidden; border-radius:99px; background:#203b46; margin-top:8px; } .meter > i { display:block; height:100%; background:var(--blue); }
+    .badge { display:inline-block; margin-right:6px; padding:3px 7px; border-radius:99px; color:#061218; font-size:10px; font-weight:900; letter-spacing:.04em; text-transform:uppercase; }
+    .risk { font-weight:900; white-space:nowrap; } .critical { background:var(--critical); } .high { background:var(--high); } .medium { background:var(--medium); } .low { background:var(--low); }
+    .finding p { margin:7px 0 0; color:#c4d6d9; font-size:13px; } .finding .recommendation { color:#c9f5ef; }
+    details { margin-top:18px; color:var(--muted); font-size:13px; } summary { cursor:pointer; color:#c2d7da; font-weight:700; }
+    .error { padding:12px; border-left:3px solid var(--critical); color:#ffd4d8; background:#251519; } .footer-note { margin:18px 0 0; color:var(--muted); font-size:12px; }
+    @media (max-width:880px) { main { padding:22px 14px 38px; } header { align-items:flex-start; flex-direction:column; gap:10px; } .layout { grid-template-columns:1fr; } .summary { grid-template-columns:repeat(2,1fr); } textarea { min-height:280px; } .empty { min-height:300px; } }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div><h1>Sentinel<span>Trace</span></h1><p class="tag">Explainable local log-threat triage for authorised security analysis</p></div>
+      <div id="service" class="service">CHECKING LOCAL SERVICE…</div>
+    </header>
+    <div class="layout">
+      <section class="panel" aria-labelledby="input-title">
+        <div class="eyebrow">Step 1</div>
+        <h2 id="input-title">Provide authorised log text</h2>
+        <p class="muted">Apache-style access logs and common SSH password logs are supported.</p>
+        <textarea id="logs" aria-label="Log input" placeholder="Paste authorised Apache access logs or Linux SSH authentication logs here…"></textarea>
+        <div class="buttons"><button id="demo" type="button">Load synthetic demo</button><button id="analyze" type="button">Analyse logs</button><button id="download" class="secondary" type="button" disabled>Download JSON report</button></div>
+        <p class="boundary"><b>Safety boundary:</b> log text stays in this local browser-to-localhost demonstration. Findings are triage signals, not proof of an incident.</p>
+      </section>
+      <section class="panel" aria-live="polite" aria-labelledby="result-title">
+        <div class="eyebrow">Step 2</div><h2 id="result-title">Explainable triage result</h2>
+        <div id="result" class="empty"><div><h3>Ready for analysis</h3><p>Load the synthetic demo or paste authorised logs, then select <span class="accent">Analyse logs</span>.</p></div></div>
+      </section>
+    </div>
+    <p class="footer-note">SentinelTrace v3 · Local demonstration only · No cloud API, database, scanner, or external log upload.</p>
+  </main>
+  <script>
+    let report = null;
+    const $ = id => document.getElementById(id);
+    const escapeHtml = value => String(value).replace(/[&<>"']/g, char => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
+    const number = value => Number(value || 0);
+
+    function entityMarkup(entity) {
+      const breakdown = entity.risk_breakdown.map(item => escapeHtml(item.rule) + " (+" + item.weight + ")").join(" · ");
+      return '<article class="entity"><div class="entity-head"><div><b>' + escapeHtml(entity.ip) + '</b><div class="entity-rules">' + breakdown + '</div></div><div class="risk"><span class="badge ' + escapeHtml(entity.risk_level) + '">' + escapeHtml(entity.risk_level) + '</span>' + entity.risk + '/100</div></div><div class="meter" aria-label="Risk score ' + entity.risk + ' out of 100"><i style="width:' + Math.min(100, number(entity.risk)) + '%"></i></div><div class="meta">' + entity.finding_count + ' finding(s) · first evidence at log line ' + entity.first_evidence_line + '</div></article>';
+    }
+    function findingMarkup(finding) {
+      return '<article class="finding"><span class="badge ' + escapeHtml(finding.severity) + '">' + escapeHtml(finding.severity) + '</span><b>' + escapeHtml(finding.title) + '</b><div class="meta">' + escapeHtml(finding.id) + ' · ' + escapeHtml(finding.ip) + ' · ' + escapeHtml(finding.source) + ' log · line ' + finding.line + ' · ' + escapeHtml(finding.time) + '</div><p><b>Evidence:</b> ' + escapeHtml(finding.evidence) + '</p><p class="meta"><b>Why flagged:</b> ' + escapeHtml(finding.explanation) + ' MITRE ATT&CK: ' + escapeHtml(finding.mitre) + ' · Confidence: ' + escapeHtml(finding.confidence) + '</p><p class="recommendation"><b>Recommended next step:</b> ' + escapeHtml(finding.recommendation) + '</p></article>';
+    }
+    function render(data) {
+      report = data;
+      $("download").disabled = false;
+      const input = data.input_summary;
+      const counts = data.severity_counts;
+      const entities = data.entities.length ? data.entities.map(entityMarkup).join("") : '<p class="muted">No source IP reached a rule threshold in this input.</p>';
+      const findings = data.findings.length ? data.findings.map(findingMarkup).join("") : '<p class="muted">No configured indicators were triggered. ' + (input.ignored_lines ? input.ignored_lines + ' unrecognised line(s) were ignored.' : "") + '</p>';
+      const limits = data.limitations.map(item => '<li>' + escapeHtml(item) + '</li>').join("");
+      $("result").className = "";
+      $("result").innerHTML = '<div class="meta">Analysis ' + escapeHtml(data.analysis_id) + ' · ' + escapeHtml(data.engine) + '</div><div class="summary"><div class="stat"><b>' + input.parsed_events + '</b><small>parsed events</small></div><div class="stat"><b>' + data.findings.length + '</b><small>findings</small></div><div class="stat"><b>' + data.entities.length + '</b><small>flagged IPs</small></div><div class="stat"><b>' + (number(counts.critical) + number(counts.high)) + '</b><small>high / critical</small></div></div><div class="meta">Web ' + input.web_events + ' · SSH/auth ' + input.auth_events + ' · Ignored ' + input.ignored_lines + ' · Critical ' + counts.critical + ' · High ' + counts.high + ' · Medium ' + counts.medium + '</div><div class="section"><div class="eyebrow">Prioritised entities</div>' + entities + '</div><div class="section"><div class="eyebrow">Evidence timeline</div>' + findings + '</div><details><summary>Risk model and limitations</summary><p>' + escapeHtml(data.risk_model.formula) + '</p><ul>' + limits + '</ul></details>';
+    }
+    function showError(message) { $("result").className = "error"; $("result").innerHTML = "<b>Analysis error</b><br>" + escapeHtml(message); }
+    async function loadDemo() {
+      const button = $("demo"); button.disabled = true;
+      try { const response = await fetch("/demo"); const data = await response.json(); if (!response.ok) throw new Error(data.error || "Unable to load the synthetic demo."); $("logs").value = data.logs; }
+      catch (error) { showError(error.message); }
+      finally { button.disabled = false; }
+    }
+    async function analyseLogs() {
+      const button = $("analyze"); button.disabled = true; button.textContent = "Analysing…";
+      try {
+        const response = await fetch("/analyze", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({logs:$("logs").value})});
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Analysis could not be completed.");
+        render(data);
+      } catch (error) { showError(error.message); }
+      finally { button.disabled = false; button.textContent = "Analyse logs"; }
+    }
+    function downloadReport() {
+      if (!report) return;
+      const url = URL.createObjectURL(new Blob([JSON.stringify(report, null, 2)], {type:"application/json"}));
+      const anchor = document.createElement("a"); anchor.href = url; anchor.download = "sentineltrace-" + report.analysis_id + ".json"; anchor.click();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+    async function showHealth() {
+      try { const response = await fetch("/health"); if (!response.ok) throw new Error(); $("service").textContent = "LOCAL SERVICE READY"; }
+      catch { $("service").textContent = "LOCAL SERVICE UNAVAILABLE"; $("service").classList.add("offline"); }
+    }
+    $("demo").addEventListener("click", loadDemo);
+    $("analyze").addEventListener("click", analyseLogs);
+    $("download").addEventListener("click", downloadReport);
+    showHealth();
+  </script>
+</body>
+</html>

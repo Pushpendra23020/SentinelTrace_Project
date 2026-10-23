@@ -1,0 +1,13 @@
+Sep 14 10:02:01 lab sshd[1101]: Failed password for invalid user admin from 203.0.113.45 port 51621 ssh2
+Sep 14 10:02:09 lab sshd[1102]: Failed password for root from 203.0.113.45 port 51622 ssh2
+Sep 14 10:02:17 lab sshd[1103]: Failed password for root from 203.0.113.45 port 51623 ssh2
+Sep 14 10:02:26 lab sshd[1104]: Failed password for deploy from 203.0.113.45 port 51624 ssh2
+Sep 14 10:02:35 lab sshd[1105]: Failed password for root from 203.0.113.45 port 51625 ssh2
+Sep 14 10:03:10 lab sshd[1110]: Accepted password for deploy from 203.0.113.45 port 51640 ssh2
+198.51.100.27 - - [14/Sep/2026:10:04:12 +0000] "GET /.env HTTP/1.1" 404 120
+198.51.100.27 - - [14/Sep/2026:10:04:13 +0000] "GET /.git/config HTTP/1.1" 404 120
+198.51.100.27 - - [14/Sep/2026:10:04:14 +0000] "GET /wp-admin HTTP/1.1" 404 120
+198.51.100.27 - - [14/Sep/2026:10:04:18 +0000] "GET /download?file=../../etc/passwd HTTP/1.1" 403 120
+192.0.2.91 - - [14/Sep/2026:10:05:01 +0000] "GET /products?id=4%20UNION%20SELECT%20username,password%20FROM%20users HTTP/1.1" 400 120
+192.0.2.92 - - [14/Sep/2026:10:05:08 +0000] "GET /status?host=example.com;curl%20bad.invalid HTTP/1.1" 400 120
+192.0.2.10 - - [14/Sep/2026:10:06:00 +0000] "GET /home HTTP/1.1" 200 2120

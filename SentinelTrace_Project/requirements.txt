@@ -1,0 +1,2 @@
+# SentinelTrace runtime deliberately uses only Python's standard library.
+# No pip installation is required to run the project or its automated tests.
